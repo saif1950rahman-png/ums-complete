@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment History — SEU UMS Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .sidebar-link { transition: all .15s; }
+        .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,.1); color: #fff; }
+    </style>
+</head>
+<body class="bg-slate-100 flex min-h-screen">
+
+<aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen">
+    <div class="p-5 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <span class="font-display text-slate-900 font-bold text-sm">SEU</span>
+            </div>
+            <div><p class="text-white font-semibold text-sm">SEU Admin</p><p class="text-slate-500 text-xs">Management System</p></div>
+        </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 text-sm">
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-1">Main Menu</p>
+        <a href="/admin/dashboard.html" class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🏠</span> Dashboard</a>
+        <a href="/admin/students.html"  class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>👥</span> Students</a>
+        <a href="/admin/courses.html"   class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📚</span> Courses</a>
+        <a href="/admin/results.html"   class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📊</span> Results</a>
+        <p class="text-slate-500 text-xs uppercase font-semibond px-3 mb-2 mt-4">Finance</p>
+        <a href="/admin/fees.html"      class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>💰</span> Fee Management</a>
+        <a href="/admin/payments.html"  class="sidebar-link active flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🧾</span> Payment History</a>
+    </nav>
+    <div class="p-4 border-t border-slate-700">
+        <button onclick="handleLogout()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-900/20 transition-colors flex items-center gap-2"><span>🚪</span> Logout</button>
+    </div>
+</aside>
+
+<main class="flex-1 overflow-auto">
+    <header class="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-10">
+        <h1 class="font-display text-xl font-bold text-slate-800">Payment History</h1>
+        <p class="text-slate-500 text-xs mt-0.5">All recorded fee payments across the system</p>
+    </header>
+
+    <div class="p-8">
+        <!-- Summary -->
+        <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center">
+                <p class="text-xs text-slate-500 uppercase mb-1">Total Payments</p>
+                <p class="text-2xl font-bold text-slate-800" id="totalPayments">—</p>
+            </div>
+            <div class="bg-emerald-50 rounded-xl p-4 shadow-sm border border-emerald-100 text-center">
+                <p class="text-xs text-emerald-600 uppercase mb-1">Total Collected</p>
+                <p class="text-2xl font-bold text-emerald-700" id="totalCollected">৳—</p>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-100 text-center">
+                <p class="text-xs text-blue-600 uppercase mb-1">Avg per Payment</p>
+                <p class="text-2xl font-bold text-blue-700" id="avgPayment">৳—</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">#</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Student</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Date</th>
+                            <th class="text-right py-3 px-4 text-slate-500 font-medium">Amount</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Method</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Transaction ID</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Received By</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsBody">
+                        <tr><td colspan="7" class="text-center py-12 text-slate-400">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/assets/js/api.js"></script>
+<script>
+(async () => {
+    const session = await Auth.getSession();
+    if (!session.success || session.role !== 'admin') {
+        window.location.href = '/admin/login.html'; return;
+    }
+
+    // Load all fees and fetch history for each (simplified approach via all fees)
+    // Better: use a dedicated /api/payments endpoint — for now load from fees list
+    const feesData = await FeeAPI.getAll('');
+    if (!feesData.success) return;
+
+    // Gather all payment histories
+    let allPayments = [];
+    for (const fee of feesData.data) {
+        if (parseFloat(fee.paid_amount) > 0) {
+            const hist = await FeeAPI.getHistory(fee.id);
+            if (hist.success) {
+                hist.data.forEach(p => {
+                    allPayments.push({ ...p, student_no: fee.student_no, student_name: fee.full_name });
+                });
+            }
+        }
+    }
+
+    // Sort by date desc
+    allPayments.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
+
+    const total     = allPayments.reduce((s, p) => s + parseFloat(p.amount_paid), 0);
+    const avg       = allPayments.length ? total / allPayments.length : 0;
+    document.getElementById('totalPayments').textContent = allPayments.length;
+    document.getElementById('totalCollected').textContent = formatBDT(total);
+    document.getElementById('avgPayment').textContent     = formatBDT(avg);
+
+    const tbody = document.getElementById('paymentsBody');
+    if (allPayments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-slate-400">No payments recorded yet.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = allPayments.map((p, i) => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50">
+            <td class="py-3 px-4 text-slate-400 text-xs">${i + 1}</td>
+            <td class="py-3 px-4">
+                <p class="font-semibold text-slate-700">${p.student_name}</p>
+                <p class="text-xs text-slate-400 font-mono">${p.student_no}</p>
+            </td>
+            <td class="py-3 px-4 text-center text-slate-600">${new Date(p.payment_date).toLocaleDateString('en-BD', { year:'numeric', month:'short', day:'numeric' })}</td>
+            <td class="py-3 px-4 text-right font-bold text-emerald-600">${formatBDT(p.amount_paid)}</td>
+            <td class="py-3 px-4 text-center">
+                <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">${p.payment_method}</span>
+            </td>
+            <td class="py-3 px-4 text-slate-500 text-xs font-mono">${p.transaction_id || '—'}</td>
+            <td class="py-3 px-4 text-slate-500 text-sm">${p.received_by || 'Admin'}</td>
+        </tr>`).join('');
+})();
+
+async function handleLogout() { await Auth.adminLogout(); window.location.href = '/admin/login.html'; }
+</script>
+</body>
+</html>

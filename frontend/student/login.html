@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login — SEU UMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .bg-pattern {
+            background-color: #172554;
+            background-image: radial-gradient(circle at 20% 80%, #1d4ed8 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, #1e40af 0%, transparent 50%);
+        }
+    </style>
+</head>
+<body class="bg-pattern min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-md">
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center mx-auto mb-3">
+            <span class="font-display text-slate-900 font-bold text-xl">SEU</span>
+        </div>
+        <h1 class="font-display text-2xl text-white font-bold">Student Portal</h1>
+        <p class="text-blue-200 text-sm mt-1">University Management System</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+        <h2 class="text-xl font-semibold text-slate-800 mb-6">Student Sign In</h2>
+
+        <div id="errorAlert" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4"></div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Student ID</label>
+                <input id="student_id" type="text" placeholder="e.g. 2021-1-60-001"
+                       class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+                <div class="relative">
+                    <input id="password" type="password" placeholder="Enter your password"
+                           class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-10">
+                    <button onclick="togglePwd()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <button id="loginBtn" onclick="handleLogin()"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-200 mt-2 flex items-center justify-center gap-2">
+                <span id="btnText">Sign In</span>
+                <span id="btnLoader" class="hidden">
+                    <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </span>
+            </button>
+        </div>
+
+        <div class="mt-5 p-3 bg-blue-50 rounded-lg text-xs text-slate-500 text-center">
+            Demo: Student ID <strong>2021-1-60-001</strong> / Password <strong>student123</strong>
+        </div>
+
+        <div class="mt-4 text-center">
+            <a href="/index.html" class="text-sm text-slate-500 hover:text-slate-700">← Back to Portal Home</a>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script>
+    Auth.getSession().then(data => {
+        if (data.success && data.role === 'student') {
+            window.location.href = '/student/dashboard.html';
+        }
+    });
+
+    function togglePwd() {
+        const p = document.getElementById('password');
+        p.type = p.type === 'password' ? 'text' : 'password';
+    }
+
+    async function handleLogin() {
+        const student_id = document.getElementById('student_id').value.trim();
+        const password   = document.getElementById('password').value;
+        const errEl      = document.getElementById('errorAlert');
+
+        if (!student_id || !password) {
+            errEl.textContent = 'Please enter your Student ID and password.';
+            errEl.classList.remove('hidden'); return;
+        }
+
+        errEl.classList.add('hidden');
+        document.getElementById('btnText').textContent = 'Signing in...';
+        document.getElementById('btnLoader').classList.remove('hidden');
+        document.getElementById('loginBtn').disabled = true;
+
+        const data = await Auth.studentLogin(student_id, password);
+
+        document.getElementById('btnText').textContent = 'Sign In';
+        document.getElementById('btnLoader').classList.add('hidden');
+        document.getElementById('loginBtn').disabled = false;
+
+        if (data.success) {
+            window.location.href = '/student/dashboard.html';
+        } else {
+            errEl.textContent = data.message || 'Login failed.';
+            errEl.classList.remove('hidden');
+        }
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+</script>
+</body>
+</html>

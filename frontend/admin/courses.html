@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courses — SEU UMS Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .sidebar-link { transition: all .15s; }
+        .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,.1); color: #fff; }
+        .modal-backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-slate-100 flex min-h-screen">
+
+<aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen">
+    <div class="p-5 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <span class="font-display text-slate-900 font-bold text-sm">SEU</span>
+            </div>
+            <div><p class="text-white font-semibold text-sm">SEU Admin</p><p class="text-slate-500 text-xs">Management System</p></div>
+        </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 text-sm">
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-1">Main Menu</p>
+        <a href="/admin/dashboard.html" class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🏠</span> Dashboard</a>
+        <a href="/admin/students.html"  class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>👥</span> Students</a>
+        <a href="/admin/courses.html"   class="sidebar-link active flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📚</span> Courses</a>
+        <a href="/admin/results.html"   class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📊</span> Results</a>
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-4">Finance</p>
+        <a href="/admin/fees.html"      class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>💰</span> Fee Management</a>
+        <a href="/admin/payments.html"  class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🧾</span> Payment History</a>
+    </nav>
+    <div class="p-4 border-t border-slate-700">
+        <button onclick="handleLogout()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-900/20 transition-colors flex items-center gap-2"><span>🚪</span> Logout</button>
+    </div>
+</aside>
+
+<main class="flex-1 overflow-auto">
+    <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div>
+            <h1 class="font-display text-xl font-bold text-slate-800">Courses</h1>
+            <p class="text-slate-500 text-xs mt-0.5">Manage course offerings</p>
+        </div>
+        <button onclick="openAddModal()" class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors">
+            <span>+</span> Add Course
+        </button>
+    </header>
+
+    <div class="p-8">
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-5">
+            <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-44">
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Search</label>
+                    <input id="filterSearch" type="text" placeholder="Code or course name..."
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Semester</label>
+                    <select id="filterSem" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                        <option value="">All</option>
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option>
+                    </select>
+                </div>
+                <button onclick="loadCourses()" class="bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">🔍 Filter</button>
+                <button onclick="clearFilters()" class="bg-slate-100 text-slate-600 text-sm px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors">Clear</button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Code</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Course Name</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Department</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Semester</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Credits</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coursesBody">
+                        <tr><td colspan="6" class="text-center py-12 text-slate-400">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Course Modal -->
+<div id="courseModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-lg font-bold text-slate-800" id="modalTitle">Add Course</h3>
+            <button onclick="closeModal('courseModal')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+        </div>
+        <input type="hidden" id="editCourseId">
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Course Code *</label>
+                    <input id="fCode" type="text" placeholder="e.g. CSE301"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Credit Hours *</label>
+                    <input id="fCredits" type="number" placeholder="3.0" step="0.5" min="0.5" max="6"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Course Name *</label>
+                <input id="fName" type="text" placeholder="Full course name"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Department *</label>
+                    <select id="fDept" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                        <option value="">-- Select --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Semester *</label>
+                    <select id="fSemester" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Description</label>
+                <textarea id="fDesc" rows="2" placeholder="Optional description..."
+                          class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"></textarea>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeModal('courseModal')" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">Cancel</button>
+            <button onclick="submitCourse()" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors" id="submitBtn">Add Course</button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script>
+let editMode = false;
+
+(async () => {
+    const session = await Auth.getSession();
+    if (!session.success || session.role !== 'admin') {
+        window.location.href = '/admin/login.html'; return;
+    }
+    // Load dept dropdown
+    const deptData = await StudentAPI.getDepts();
+    if (deptData.success) {
+        const sel = document.getElementById('fDept');
+        deptData.data.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.code} — ${d.name}</option>`);
+    }
+    loadCourses();
+})();
+
+async function loadCourses() {
+    const search   = document.getElementById('filterSearch').value.trim();
+    const semester = document.getElementById('filterSem').value;
+    const params   = new URLSearchParams();
+    if (search)   params.append('search', search);
+    if (semester) params.append('semester', semester);
+    const data = await CourseAPI.getAll(params.toString());
+    const tbody = document.getElementById('coursesBody');
+    if (!data.success || data.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-12 text-slate-400">No courses found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.data.map(c => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50">
+            <td class="py-3 px-4 font-mono font-semibold text-violet-700">${c.course_code}</td>
+            <td class="py-3 px-4 text-slate-700 font-medium">${c.course_name}</td>
+            <td class="py-3 px-4 text-sm text-slate-500">${c.dept_code} — ${c.department_name}</td>
+            <td class="py-3 px-4 text-center text-slate-600">Semester ${c.semester}</td>
+            <td class="py-3 px-4 text-center font-semibold text-slate-700">${c.credit_hours}</td>
+            <td class="py-3 px-4">
+                <div class="flex items-center justify-center gap-1">
+                    <button onclick='openEditModal(${JSON.stringify(c)})' class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium rounded-lg">✏️ Edit</button>
+                    <button onclick="deleteCourse(${c.id})" class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 text-xs font-medium rounded-lg">🗑️</button>
+                </div>
+            </td>
+        </tr>`).join('');
+}
+
+function clearFilters() {
+    document.getElementById('filterSearch').value = '';
+    document.getElementById('filterSem').value    = '';
+    loadCourses();
+}
+
+function openAddModal() {
+    editMode = false;
+    document.getElementById('modalTitle').textContent = 'Add Course';
+    document.getElementById('submitBtn').textContent  = 'Add Course';
+    ['fCode','fName','fCredits','fDesc'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fDept').value     = '';
+    document.getElementById('fSemester').value = '1';
+    document.getElementById('fCode').disabled  = false;
+    document.getElementById('editCourseId').value = '';
+    openModal('courseModal');
+}
+
+function openEditModal(c) {
+    editMode = true;
+    document.getElementById('modalTitle').textContent = 'Edit Course';
+    document.getElementById('submitBtn').textContent  = 'Update Course';
+    document.getElementById('editCourseId').value = c.id;
+    document.getElementById('fCode').value        = c.course_code;
+    document.getElementById('fCode').disabled     = true;
+    document.getElementById('fName').value        = c.course_name;
+    document.getElementById('fCredits').value     = c.credit_hours;
+    document.getElementById('fDept').value        = c.department_id;
+    document.getElementById('fSemester').value    = c.semester;
+    document.getElementById('fDesc').value        = c.description || '';
+    openModal('courseModal');
+}
+
+async function submitCourse() {
+    const course_name   = document.getElementById('fName').value.trim();
+    const credit_hours  = document.getElementById('fCredits').value;
+    const department_id = document.getElementById('fDept').value;
+    const semester      = document.getElementById('fSemester').value;
+    const description   = document.getElementById('fDesc').value.trim();
+
+    if (!course_name || !credit_hours || !department_id) {
+        showToast('Fill in all required fields.', 'error'); return;
+    }
+
+    let data;
+    if (editMode) {
+        const id = document.getElementById('editCourseId').value;
+        data = await CourseAPI.update(id, { course_name, credit_hours, department_id, semester, description });
+    } else {
+        const course_code = document.getElementById('fCode').value.trim();
+        if (!course_code) { showToast('Course code required.', 'error'); return; }
+        data = await CourseAPI.add({ course_code, course_name, credit_hours, department_id, semester, description });
+    }
+
+    if (data.success) {
+        showToast(data.message, 'success');
+        closeModal('courseModal');
+        document.getElementById('fCode').disabled = false;
+        loadCourses();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function deleteCourse(id) {
+    if (!confirmDelete('Delete this course?')) return;
+    const data = await CourseAPI.delete(id);
+    if (data.success) { showToast(data.message, 'success'); loadCourses(); }
+    else showToast(data.message, 'error');
+}
+
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+    document.getElementById('fCode').disabled = false;
+}
+async function handleLogout() { await Auth.adminLogout(); window.location.href = '/admin/login.html'; }
+</script>
+</body>
+</html>

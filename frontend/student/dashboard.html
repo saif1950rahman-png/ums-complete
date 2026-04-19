@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard — SEU UMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .nav-link { transition: all .15s; }
+        .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,.1); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<!-- Top Nav -->
+<nav class="bg-blue-800 text-white">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <span class="font-display text-slate-900 font-bold text-xs">SEU</span>
+            </div>
+            <span class="font-semibold text-sm">SEU Student Portal</span>
+        </div>
+        <div class="flex items-center gap-1 text-sm">
+            <a href="/student/dashboard.html" class="nav-link active px-3 py-1.5 rounded-lg">🏠 Dashboard</a>
+            <a href="/student/results.html"   class="nav-link px-3 py-1.5 rounded-lg">📊 Results</a>
+            <a href="/student/fees.html"       class="nav-link px-3 py-1.5 rounded-lg">💰 My Fees</a>
+            <button onclick="handleLogout()" class="ml-3 px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-xs font-medium transition-colors">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<!-- Profile Header -->
+<div class="bg-blue-700 text-white">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <div class="flex items-center gap-5">
+            <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold" id="studentAvatar">?</div>
+            <div>
+                <h1 class="font-display text-2xl font-bold" id="studentName">Loading...</h1>
+                <p class="text-blue-200 text-sm mt-0.5" id="studentMeta">—</p>
+                <p class="text-blue-300 text-xs mt-1" id="studentEmail">—</p>
+            </div>
+            <div class="ml-auto text-right hidden md:block">
+                <p class="text-blue-200 text-xs">Student ID</p>
+                <p class="font-mono font-bold text-lg" id="studentIdDisplay">—</p>
+                <p class="text-blue-200 text-xs mt-1">CGPA: <span class="text-white font-bold" id="studentCgpa">—</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center">
+            <p class="text-2xl font-bold text-blue-700" id="qSemester">—</p>
+            <p class="text-slate-500 text-xs mt-1">Current Semester</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center">
+            <p class="text-2xl font-bold text-indigo-700" id="qBatch">—</p>
+            <p class="text-slate-500 text-xs mt-1">Batch</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center">
+            <p class="text-2xl font-bold text-emerald-700" id="qCgpa">—</p>
+            <p class="text-slate-500 text-xs mt-1">CGPA</p>
+        </div>
+        <div id="feeStatusCard" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center">
+            <p class="text-2xl font-bold text-slate-700" id="qFeeStatus">—</p>
+            <p class="text-slate-500 text-xs mt-1">Fee Status</p>
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+
+        <!-- Fee Summary Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-semibold text-slate-800">Fee Overview</h2>
+                <a href="/student/fees.html" class="text-xs text-blue-600 hover:underline">View details →</a>
+            </div>
+            <div id="feeSummaryContent">
+                <p class="text-slate-400 text-sm text-center py-6">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Recent Results Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-semibold text-slate-800">Recent Results</h2>
+                <a href="/student/results.html" class="text-xs text-blue-600 hover:underline">View all →</a>
+            </div>
+            <div id="recentResultsContent">
+                <p class="text-slate-400 text-sm text-center py-6">Loading...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Profile Details -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mt-6">
+        <h2 class="font-semibold text-slate-800 mb-4">Personal Information</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm" id="profileGrid">
+            <p class="text-slate-400">Loading...</p>
+        </div>
+    </div>
+
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script>
+(async () => {
+    const session = await Auth.getSession();
+    if (!session.success || session.role !== 'student') {
+        window.location.href = '/student/login.html'; return;
+    }
+
+    const s = session.user;
+
+    // Fill header
+    document.getElementById('studentAvatar').textContent  = s.full_name[0].toUpperCase();
+    document.getElementById('studentName').textContent    = s.full_name;
+    document.getElementById('studentMeta').textContent    = `${s.department_name} · Batch ${s.batch} · Semester ${s.semester}`;
+    document.getElementById('studentEmail').textContent   = s.email;
+    document.getElementById('studentIdDisplay').textContent = s.student_id;
+    document.getElementById('studentCgpa').textContent   = parseFloat(s.cgpa).toFixed(2);
+
+    // Quick stats
+    document.getElementById('qSemester').textContent = s.semester;
+    document.getElementById('qBatch').textContent    = s.batch;
+    document.getElementById('qCgpa').textContent     = parseFloat(s.cgpa).toFixed(2);
+
+    // Fee overview
+    const feesData = await FeeAPI.getMyFees();
+    if (feesData.success && feesData.data.length > 0) {
+        const sum = feesData.summary;
+        const latestFee = feesData.data[0];
+        document.getElementById('qFeeStatus').innerHTML = statusBadge(latestFee.status);
+
+        document.getElementById('feeSummaryContent').innerHTML = `
+            <div class="space-y-3">
+                <div class="flex justify-between items-center py-2 border-b border-slate-50">
+                    <span class="text-slate-500 text-sm">Total Billed</span>
+                    <span class="font-semibold text-slate-700">${formatBDT(sum.total_fee)}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-slate-50">
+                    <span class="text-slate-500 text-sm">Total Paid</span>
+                    <span class="font-semibold text-emerald-600">${formatBDT(sum.paid_amount)}</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-slate-500 text-sm">Outstanding Due</span>
+                    <span class="font-bold text-lg ${parseFloat(sum.due_amount) > 0 ? 'text-red-600' : 'text-emerald-600'}">${formatBDT(sum.due_amount)}</span>
+                </div>
+                ${parseFloat(sum.due_amount) > 0 ? `
+                <div class="mt-3 bg-red-50 border border-red-100 rounded-xl p-3 text-xs text-red-600">
+                    ⚠️ You have outstanding dues. Please contact the accounts office.
+                </div>` : `
+                <div class="mt-3 bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-600">
+                    ✓ All fees are cleared. Good standing!
+                </div>`}
+            </div>`;
+    } else {
+        document.getElementById('qFeeStatus').textContent = 'N/A';
+        document.getElementById('feeSummaryContent').innerHTML = '<p class="text-slate-400 text-sm text-center py-6">No fee records found.</p>';
+    }
+
+    // Recent results
+    const resultsData = await ResultAPI.getMyResults();
+    if (resultsData.success && resultsData.data.length > 0) {
+        const recent = resultsData.data.slice(0, 5);
+        document.getElementById('recentResultsContent').innerHTML = `
+            <div class="space-y-2">
+                ${recent.map(r => `
+                    <div class="flex items-center justify-between py-2 border-b border-slate-50">
+                        <div>
+                            <p class="text-sm font-medium text-slate-700">${r.course_name}</p>
+                            <p class="text-xs text-slate-400">${r.course_code} · Sem ${r.semester}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-lg ${r.grade === 'F' ? 'text-red-600' : r.grade_point >= 3.5 ? 'text-emerald-600' : 'text-blue-600'}">${r.grade}</p>
+                            <p class="text-xs text-slate-400">GP ${parseFloat(r.grade_point).toFixed(2)}</p>
+                        </div>
+                    </div>`).join('')}
+            </div>`;
+    } else {
+        document.getElementById('recentResultsContent').innerHTML = '<p class="text-slate-400 text-sm text-center py-6">No results available yet.</p>';
+    }
+
+    // Profile details (full profile)
+    const profile = await StudentAPI.getMyProfile();
+    if (profile.success) {
+        const p = profile.data;
+        document.getElementById('profileGrid').innerHTML = [
+            { label: 'Full Name', value: p.full_name },
+            { label: 'Student ID', value: p.student_id },
+            { label: 'Email', value: p.email },
+            { label: 'Phone', value: p.phone || '—' },
+            { label: 'Department', value: `${p.dept_code} — ${p.department_name}` },
+            { label: 'Status', value: p.status },
+        ].map(item => `
+            <div class="bg-slate-50 rounded-xl p-3">
+                <p class="text-xs text-slate-400 mb-0.5">${item.label}</p>
+                <p class="font-medium text-slate-700 text-sm">${item.value}</p>
+            </div>`).join('');
+    }
+})();
+
+async function handleLogout() {
+    await Auth.studentLogout();
+    window.location.href = '/student/login.html';
+}
+</script>
+</body>
+</html>

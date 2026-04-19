@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Management — SEU UMS Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .sidebar-link { transition: all .15s; }
+        .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,.1); color: #fff; }
+        .modal-backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-slate-100 flex min-h-screen">
+
+<!-- Sidebar (same as dashboard) -->
+<aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen">
+    <div class="p-5 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <span class="font-display text-slate-900 font-bold text-sm">SEU</span>
+            </div>
+            <div>
+                <p class="text-white font-semibold text-sm">SEU Admin</p>
+                <p class="text-slate-500 text-xs">Management System</p>
+            </div>
+        </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 text-sm">
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-1">Main Menu</p>
+        <a href="/admin/dashboard.html" class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🏠</span> Dashboard</a>
+        <a href="/admin/students.html"  class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>👥</span> Students</a>
+        <a href="/admin/courses.html"   class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📚</span> Courses</a>
+        <a href="/admin/results.html"   class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📊</span> Results</a>
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-4">Finance</p>
+        <a href="/admin/fees.html"      class="sidebar-link active flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>💰</span> Fee Management</a>
+        <a href="/admin/payments.html"  class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🧾</span> Payment History</a>
+    </nav>
+    <div class="p-4 border-t border-slate-700">
+        <button onclick="handleLogout()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-900/20 transition-colors flex items-center gap-2">
+            <span>🚪</span> Logout
+        </button>
+    </div>
+</aside>
+
+<!-- Main -->
+<main class="flex-1 overflow-auto">
+    <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div>
+            <h1 class="font-display text-xl font-bold text-slate-800">Fee Management</h1>
+            <p class="text-slate-500 text-xs mt-0.5">Tuition fee control — add, update, collect payments</p>
+        </div>
+        <button onclick="openAddFeeModal()"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors">
+            <span>+</span> Add Fee Record
+        </button>
+    </header>
+
+    <div class="p-8">
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Total Billed</p>
+                <p class="text-xl font-bold text-slate-800" id="sumTotal">৳—</p>
+            </div>
+            <div class="bg-emerald-50 rounded-xl p-4 shadow-sm border border-emerald-100">
+                <p class="text-xs text-emerald-600 uppercase tracking-wide mb-1">Collected</p>
+                <p class="text-xl font-bold text-emerald-700" id="sumCollected">৳—</p>
+            </div>
+            <div class="bg-red-50 rounded-xl p-4 shadow-sm border border-red-100">
+                <p class="text-xs text-red-500 uppercase tracking-wide mb-1">Total Due</p>
+                <p class="text-xl font-bold text-red-700" id="sumDue">৳—</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Records</p>
+                <p class="text-xl font-bold text-slate-800" id="sumCount">—</p>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-5">
+            <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-44">
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Search Student</label>
+                    <input id="filterSearch" type="text" placeholder="Name or Student ID..."
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Status</label>
+                    <select id="filterStatus" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="">All Status</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Partial">Partial</option>
+                        <option value="Unpaid">Unpaid</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Semester</label>
+                    <select id="filterSem" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="">All Semesters</option>
+                        <option value="1">1</option><option value="2">2</option>
+                        <option value="3">3</option><option value="4">4</option>
+                        <option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Year</label>
+                    <input id="filterYear" type="number" placeholder="2024" min="2000" max="2099"
+                           class="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <button onclick="loadFees()" class="bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+                    🔍 Filter
+                </button>
+                <button onclick="clearFilters()" class="bg-slate-100 text-slate-600 text-sm px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors">
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Fees Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">#</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Student</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Dept</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Sem/Year</th>
+                            <th class="text-right py-3 px-4 text-slate-500 font-medium">Total Fee</th>
+                            <th class="text-right py-3 px-4 text-slate-500 font-medium">Paid</th>
+                            <th class="text-right py-3 px-4 text-slate-500 font-medium">Due</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Status</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Last Payment</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="feesTableBody">
+                        <tr><td colspan="10" class="text-center py-12 text-slate-400">Loading fees...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+
+<!-- Add Fee Modal -->
+<div id="addFeeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-lg font-bold text-slate-800">Add Fee Record</h3>
+            <button onclick="closeModal('addFeeModal')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Student *</label>
+                <select id="addStudentId" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">-- Select Student --</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Semester *</label>
+                    <select id="addSemester" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="1">1</option><option value="2">2</option>
+                        <option value="3">3</option><option value="4">4</option>
+                        <option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Year *</label>
+                    <input id="addYear" type="number" value="2024" min="2000" max="2099"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Total Fee (৳) *</label>
+                    <input id="addTotalFee" type="number" placeholder="25000" min="0"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Due Date</label>
+                    <input id="addDueDate" type="date"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Notes</label>
+                <textarea id="addNotes" rows="2" placeholder="Optional notes..."
+                          class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeModal('addFeeModal')" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">Cancel</button>
+            <button onclick="submitAddFee()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Add Fee Record</button>
+        </div>
+    </div>
+</div>
+
+<!-- Pay Fee Modal -->
+<div id="payFeeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-lg font-bold text-slate-800">Record Payment</h3>
+            <button onclick="closeModal('payFeeModal')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+        </div>
+
+        <!-- Fee summary -->
+        <div class="bg-slate-50 rounded-xl p-4 mb-4 text-sm space-y-2">
+            <div class="flex justify-between"><span class="text-slate-500">Student</span><span class="font-semibold" id="payStudentName">—</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Semester</span><span id="paySemYear">—</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Total Fee</span><span id="payTotal">—</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Already Paid</span><span class="text-emerald-600 font-semibold" id="payAlreadyPaid">—</span></div>
+            <div class="flex justify-between border-t border-slate-200 pt-2"><span class="text-red-600 font-semibold">Outstanding Due</span><span class="text-red-700 font-bold text-base" id="payDue">—</span></div>
+        </div>
+
+        <input type="hidden" id="payFeeId">
+        <div class="space-y-4">
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Payment Amount (৳) *</label>
+                <input id="payAmount" type="number" placeholder="Enter amount" min="1"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <button onclick="payFullAmount()" class="mt-1.5 text-xs text-emerald-600 hover:underline">Pay full due amount</button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Payment Method</label>
+                    <select id="payMethod" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="Cash">Cash</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Mobile Banking">Mobile Banking</option>
+                        <option value="Online">Online</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Payment Date</label>
+                    <input id="payDate" type="date"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Transaction ID</label>
+                <input id="payTxId" type="text" placeholder="Optional transaction reference"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Notes</label>
+                <textarea id="payNotes" rows="2" placeholder="Optional..."
+                          class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeModal('payFeeModal')" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">Cancel</button>
+            <button onclick="submitPayment()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">✓ Record Payment</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Fee Modal -->
+<div id="editFeeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-lg font-bold text-slate-800">Edit Fee Record</h3>
+            <button onclick="closeModal('editFeeModal')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+        </div>
+        <input type="hidden" id="editFeeId">
+        <div class="space-y-4">
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Total Fee (৳) *</label>
+                <input id="editTotalFee" type="number" min="0"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Due Date</label>
+                <input id="editDueDate" type="date"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Notes</label>
+                <textarea id="editNotes" rows="2"
+                          class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeModal('editFeeModal')" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium">Cancel</button>
+            <button onclick="submitEditFee()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">Update Fee</button>
+        </div>
+    </div>
+</div>
+
+<!-- Payment History Modal -->
+<div id="historyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[80vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-lg font-bold text-slate-800">Payment History</h3>
+            <button onclick="closeModal('historyModal')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+        </div>
+        <div id="historyContent">Loading...</div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script>
+let currentDue = 0;
+
+// Auth guard
+(async () => {
+    const session = await Auth.getSession();
+    if (!session.success || session.role !== 'admin') {
+        window.location.href = '/admin/login.html'; return;
+    }
+    await loadFees();
+    await loadStudentsDropdown();
+})();
+
+async function loadFees() {
+    const search = document.getElementById('filterSearch').value.trim();
+    const status = document.getElementById('filterStatus').value;
+    const sem    = document.getElementById('filterSem').value;
+    const year   = document.getElementById('filterYear').value;
+
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (status) params.append('status', status);
+    if (sem)    params.append('semester', sem);
+    if (year)   params.append('year', year);
+
+    const data = await FeeAPI.getAll(params.toString());
+
+    if (!data.success) return;
+
+    // Update summary
+    document.getElementById('sumTotal').textContent     = formatBDT(data.summary.total_fee);
+    document.getElementById('sumCollected').textContent = formatBDT(data.summary.paid_amount);
+    document.getElementById('sumDue').textContent       = formatBDT(data.summary.due_amount);
+    document.getElementById('sumCount').textContent     = `${data.data.length} records`;
+
+    const tbody = document.getElementById('feesTableBody');
+    if (data.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-12 text-slate-400">No fee records found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.data.map((f, i) => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+            <td class="py-3 px-4 text-slate-400 text-xs">${i + 1}</td>
+            <td class="py-3 px-4">
+                <p class="font-semibold text-slate-700">${f.full_name}</p>
+                <p class="text-xs text-slate-400">${f.student_no}</p>
+            </td>
+            <td class="py-3 px-4 text-xs text-slate-500">${f.dept_code || '—'}</td>
+            <td class="py-3 px-4 text-center text-sm text-slate-600">Sem ${f.semester} / ${f.year}</td>
+            <td class="py-3 px-4 text-right font-medium text-slate-700">${formatBDT(f.total_fee)}</td>
+            <td class="py-3 px-4 text-right text-emerald-600 font-semibold">${formatBDT(f.paid_amount)}</td>
+            <td class="py-3 px-4 text-right font-bold ${parseFloat(f.due_amount) > 0 ? 'text-red-600' : 'text-slate-400'}">${formatBDT(f.due_amount)}</td>
+            <td class="py-3 px-4 text-center">${statusBadge(f.status)}</td>
+            <td class="py-3 px-4 text-center text-xs text-slate-500">${f.last_payment_date ? new Date(f.last_payment_date).toLocaleDateString('en-BD') : '—'}</td>
+            <td class="py-3 px-4">
+                <div class="flex items-center justify-center gap-1 flex-wrap">
+                    ${f.status !== 'Paid' ? `
+                    <button onclick='openPayModal(${JSON.stringify(f)})'
+                            class="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-lg transition-colors">
+                        💳 Pay
+                    </button>` : ''}
+                    <button onclick='openEditFeeModal(${JSON.stringify(f)})'
+                            class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium rounded-lg transition-colors">
+                        ✏️
+                    </button>
+                    <button onclick="openHistory(${f.id})"
+                            class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg transition-colors">
+                        🧾
+                    </button>
+                    <button onclick="deleteFeeRecord(${f.id})"
+                            class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 text-xs font-medium rounded-lg transition-colors">
+                        🗑️
+                    </button>
+                </div>
+            </td>
+        </tr>`).join('');
+}
+
+async function loadStudentsDropdown() {
+    const data = await StudentAPI.getAll();
+    if (!data.success) return;
+    const sel = document.getElementById('addStudentId');
+    sel.innerHTML = '<option value="">-- Select Student --</option>' +
+        data.data.map(s => `<option value="${s.id}">${s.student_id} — ${s.full_name}</option>`).join('');
+}
+
+function clearFilters() {
+    document.getElementById('filterSearch').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterSem').value = '';
+    document.getElementById('filterYear').value = '';
+    loadFees();
+}
+
+function openModal(id)   { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id)  { document.getElementById(id).classList.add('hidden'); }
+
+function openAddFeeModal() {
+    // Set default date to today
+    document.getElementById('addDueDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('addStudentId').value = '';
+    document.getElementById('addSemester').value  = '1';
+    document.getElementById('addYear').value      = new Date().getFullYear();
+    document.getElementById('addTotalFee').value  = '';
+    document.getElementById('addNotes').value     = '';
+    openModal('addFeeModal');
+}
+
+async function submitAddFee() {
+    const student_id = document.getElementById('addStudentId').value;
+    const semester   = document.getElementById('addSemester').value;
+    const year       = document.getElementById('addYear').value;
+    const total_fee  = document.getElementById('addTotalFee').value;
+    const due_date   = document.getElementById('addDueDate').value;
+    const notes      = document.getElementById('addNotes').value;
+
+    if (!student_id || !total_fee) {
+        showToast('Please fill in required fields.', 'error'); return;
+    }
+
+    const data = await FeeAPI.add({ student_id, semester, year, total_fee, due_date, notes });
+    if (data.success) {
+        showToast(data.message, 'success');
+        closeModal('addFeeModal');
+        loadFees();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+function openPayModal(fee) {
+    currentDue = parseFloat(fee.due_amount);
+    document.getElementById('payFeeId').value        = fee.id;
+    document.getElementById('payStudentName').textContent = fee.full_name;
+    document.getElementById('paySemYear').textContent    = `Semester ${fee.semester} / ${fee.year}`;
+    document.getElementById('payTotal').textContent      = formatBDT(fee.total_fee);
+    document.getElementById('payAlreadyPaid').textContent= formatBDT(fee.paid_amount);
+    document.getElementById('payDue').textContent        = formatBDT(fee.due_amount);
+    document.getElementById('payDate').value             = new Date().toISOString().split('T')[0];
+    document.getElementById('payAmount').value           = '';
+    document.getElementById('payTxId').value             = '';
+    document.getElementById('payNotes').value            = '';
+    openModal('payFeeModal');
+}
+
+function payFullAmount() {
+    document.getElementById('payAmount').value = currentDue.toFixed(2);
+}
+
+async function submitPayment() {
+    const fee_id         = document.getElementById('payFeeId').value;
+    const amount         = document.getElementById('payAmount').value;
+    const payment_method = document.getElementById('payMethod').value;
+    const payment_date   = document.getElementById('payDate').value;
+    const transaction_id = document.getElementById('payTxId').value;
+    const notes          = document.getElementById('payNotes').value;
+
+    if (!amount || parseFloat(amount) <= 0) {
+        showToast('Enter a valid payment amount.', 'error'); return;
+    }
+
+    const data = await FeeAPI.pay({ fee_id, amount, payment_method, payment_date, transaction_id, notes, received_by: 'Admin' });
+    if (data.success) {
+        showToast(data.message, 'success');
+        closeModal('payFeeModal');
+        loadFees();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+function openEditFeeModal(fee) {
+    document.getElementById('editFeeId').value    = fee.id;
+    document.getElementById('editTotalFee').value = fee.total_fee;
+    document.getElementById('editDueDate').value  = fee.due_date ? fee.due_date.split('T')[0] : '';
+    document.getElementById('editNotes').value    = fee.notes || '';
+    openModal('editFeeModal');
+}
+
+async function submitEditFee() {
+    const id       = document.getElementById('editFeeId').value;
+    const total_fee= document.getElementById('editTotalFee').value;
+    const due_date = document.getElementById('editDueDate').value;
+    const notes    = document.getElementById('editNotes').value;
+
+    if (!total_fee) { showToast('Total fee is required.', 'error'); return; }
+
+    const data = await FeeAPI.update(id, { total_fee, due_date, notes });
+    if (data.success) {
+        showToast(data.message, 'success');
+        closeModal('editFeeModal');
+        loadFees();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function deleteFeeRecord(id) {
+    if (!confirmDelete('Delete this fee record? Payment history will also be deleted.')) return;
+    const data = await FeeAPI.delete(id);
+    if (data.success) {
+        showToast(data.message, 'success');
+        loadFees();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function openHistory(feeId) {
+    openModal('historyModal');
+    document.getElementById('historyContent').innerHTML = 'Loading...';
+    const data = await FeeAPI.getHistory(feeId);
+    if (!data.success || data.data.length === 0) {
+        document.getElementById('historyContent').innerHTML = '<p class="text-slate-400 text-center py-6">No payment history found.</p>';
+        return;
+    }
+    document.getElementById('historyContent').innerHTML = `
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="text-left py-2 px-3 text-slate-500 font-medium">Date</th>
+                    <th class="text-right py-2 px-3 text-slate-500 font-medium">Amount</th>
+                    <th class="text-center py-2 px-3 text-slate-500 font-medium">Method</th>
+                    <th class="text-left py-2 px-3 text-slate-500 font-medium">Tx ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.data.map(p => `
+                    <tr class="border-b border-slate-50">
+                        <td class="py-2 px-3 text-slate-600">${new Date(p.payment_date).toLocaleDateString('en-BD')}</td>
+                        <td class="py-2 px-3 text-right font-semibold text-emerald-600">${formatBDT(p.amount_paid)}</td>
+                        <td class="py-2 px-3 text-center text-xs text-slate-500">${p.payment_method}</td>
+                        <td class="py-2 px-3 text-xs text-slate-400">${p.transaction_id || '—'}</td>
+                    </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+async function handleLogout() {
+    await Auth.adminLogout();
+    window.location.href = '/admin/login.html';
+}
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal-backdrop').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+});
+</script>
+</body>
+</html>

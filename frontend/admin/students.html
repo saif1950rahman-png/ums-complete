@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students — SEU UMS Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .sidebar-link { transition: all .15s; }
+        .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,.1); color: #fff; }
+        .modal-backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-slate-100 flex min-h-screen">
+
+<!-- Sidebar -->
+<aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen">
+    <div class="p-5 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <span class="font-display text-slate-900 font-bold text-sm">SEU</span>
+            </div>
+            <div><p class="text-white font-semibold text-sm">SEU Admin</p><p class="text-slate-500 text-xs">Management System</p></div>
+        </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 text-sm">
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-1">Main Menu</p>
+        <a href="/admin/dashboard.html" class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🏠</span> Dashboard</a>
+        <a href="/admin/students.html"  class="sidebar-link active flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>👥</span> Students</a>
+        <a href="/admin/courses.html"   class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📚</span> Courses</a>
+        <a href="/admin/results.html"   class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📊</span> Results</a>
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-4">Finance</p>
+        <a href="/admin/fees.html"      class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>💰</span> Fee Management</a>
+        <a href="/admin/payments.html"  class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🧾</span> Payment History</a>
+    </nav>
+    <div class="p-4 border-t border-slate-700">
+        <button onclick="handleLogout()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-900/20 transition-colors flex items-center gap-2"><span>🚪</span> Logout</button>
+    </div>
+</aside>
+
+<main class="flex-1 overflow-auto">
+    <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div>
+            <h1 class="font-display text-xl font-bold text-slate-800">Students</h1>
+            <p class="text-slate-500 text-xs mt-0.5">Manage all student records</p>
+        </div>
+        <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors">
+            <span>+</span> Add Student
+        </button>
+    </header>
+
+    <div class="p-8">
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-5">
+            <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-44">
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Search</label>
+                    <input id="filterSearch" type="text" placeholder="Name, ID or email..."
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Department</label>
+                    <select id="filterDept" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Depts</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Status</label>
+                    <select id="filterStatus" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Graduated">Graduated</option>
+                    </select>
+                </div>
+                <button onclick="loadStudents()" class="bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">🔍 Filter</button>
+                <button onclick="clearFilters()" class="bg-slate-100 text-slate-600 text-sm px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors">Clear</button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <p class="text-sm text-slate-500">Showing <span id="studentCount">—</span> students</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Student ID</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Name</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Department</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Batch / Sem</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">CGPA</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Status</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsBody">
+                        <tr><td colspan="7" class="text-center py-12 text-slate-400">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Add/Edit Student Modal -->
+<div id="studentModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-lg font-bold text-slate-800" id="modalTitle">Add Student</h3>
+            <button onclick="closeModal('studentModal')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+        </div>
+        <input type="hidden" id="editStudentDbId">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Student ID *</label>
+                <input id="fStudentId" type="text" placeholder="e.g. 2021-1-60-001"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Full Name *</label>
+                <input id="fFullName" type="text" placeholder="Student's full name"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Email *</label>
+                <input id="fEmail" type="email" placeholder="student@email.com"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Password <span id="pwdRequired">*</span></label>
+                <input id="fPassword" type="password" placeholder="Min 6 characters"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Department *</label>
+                <select id="fDept" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Select --</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Batch *</label>
+                <input id="fBatch" type="text" placeholder="e.g. 2021"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Current Semester</label>
+                <select id="fSemester" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="1">1</option><option value="2">2</option>
+                    <option value="3">3</option><option value="4">4</option>
+                    <option value="5">5</option><option value="6">6</option>
+                    <option value="7">7</option><option value="8">8</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Phone</label>
+                <input id="fPhone" type="text" placeholder="01XXXXXXXXX"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div id="cgpaField" class="hidden">
+                <label class="text-xs font-medium text-slate-600 block mb-1">CGPA</label>
+                <input id="fCgpa" type="number" min="0" max="4" step="0.01" placeholder="0.00"
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div id="statusField" class="hidden">
+                <label class="text-xs font-medium text-slate-600 block mb-1">Status</label>
+                <select id="fStatus" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Graduated">Graduated</option>
+                </select>
+            </div>
+            <div class="col-span-2">
+                <label class="text-xs font-medium text-slate-600 block mb-1">Address</label>
+                <textarea id="fAddress" rows="2" placeholder="Student's address"
+                          class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeModal('studentModal')" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">Cancel</button>
+            <button onclick="submitStudent()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors" id="submitBtn">Add Student</button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script>
+let depts = [], editMode = false;
+
+(async () => {
+    const session = await Auth.getSession();
+    if (!session.success || session.role !== 'admin') {
+        window.location.href = '/admin/login.html'; return;
+    }
+    // Load departments for filter + modal
+    const deptData = await StudentAPI.getDepts();
+    if (deptData.success) {
+        depts = deptData.data;
+        const filterSel = document.getElementById('filterDept');
+        const formSel   = document.getElementById('fDept');
+        depts.forEach(d => {
+            filterSel.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+            formSel.innerHTML   += `<option value="${d.id}">${d.name}</option>`;
+        });
+    }
+    loadStudents();
+})();
+
+async function loadStudents() {
+    const search = document.getElementById('filterSearch').value.trim();
+    const dept   = document.getElementById('filterDept').value;
+    const status = document.getElementById('filterStatus').value;
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (dept)   params.append('dept', dept);
+    if (status) params.append('status', status);
+
+    const data = await StudentAPI.getAll(params.toString());
+    document.getElementById('studentCount').textContent = data.data?.length || 0;
+
+    const tbody = document.getElementById('studentsBody');
+    if (!data.success || data.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-slate-400">No students found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.data.map(s => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+            <td class="py-3 px-4 font-mono text-xs text-slate-600">${s.student_id}</td>
+            <td class="py-3 px-4">
+                <p class="font-semibold text-slate-700">${s.full_name}</p>
+                <p class="text-xs text-slate-400">${s.email}</p>
+            </td>
+            <td class="py-3 px-4 text-sm text-slate-600">${s.dept_code} — ${s.department_name}</td>
+            <td class="py-3 px-4 text-center text-sm text-slate-600">${s.batch} / Sem ${s.semester}</td>
+            <td class="py-3 px-4 text-center font-bold text-slate-700">${parseFloat(s.cgpa).toFixed(2)}</td>
+            <td class="py-3 px-4 text-center">${statusBadge(s.status)}</td>
+            <td class="py-3 px-4">
+                <div class="flex items-center justify-center gap-1">
+                    <button onclick='openEditModal(${JSON.stringify(s)})'
+                            class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium rounded-lg">✏️ Edit</button>
+                    <a href="/admin/fees.html?student=${s.id}"
+                       class="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-lg">💰 Fees</a>
+                    <button onclick="deleteStudent(${s.id})"
+                            class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 text-xs font-medium rounded-lg">🗑️</button>
+                </div>
+            </td>
+        </tr>`).join('');
+}
+
+function clearFilters() {
+    document.getElementById('filterSearch').value = '';
+    document.getElementById('filterDept').value   = '';
+    document.getElementById('filterStatus').value = '';
+    loadStudents();
+}
+
+function openAddModal() {
+    editMode = false;
+    document.getElementById('modalTitle').textContent = 'Add Student';
+    document.getElementById('submitBtn').textContent  = 'Add Student';
+    document.getElementById('pwdRequired').textContent = '*';
+    document.getElementById('cgpaField').classList.add('hidden');
+    document.getElementById('statusField').classList.add('hidden');
+    ['fStudentId','fFullName','fEmail','fPassword','fBatch','fPhone','fAddress'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fSemester').value = '1';
+    document.getElementById('fDept').value     = '';
+    document.getElementById('editStudentDbId').value = '';
+    openModal('studentModal');
+}
+
+function openEditModal(s) {
+    editMode = true;
+    document.getElementById('modalTitle').textContent = 'Edit Student';
+    document.getElementById('submitBtn').textContent  = 'Update Student';
+    document.getElementById('pwdRequired').textContent = '(leave blank to keep)';
+    document.getElementById('cgpaField').classList.remove('hidden');
+    document.getElementById('statusField').classList.remove('hidden');
+    document.getElementById('editStudentDbId').value  = s.id;
+    document.getElementById('fStudentId').value       = s.student_id;
+    document.getElementById('fStudentId').disabled    = true;
+    document.getElementById('fFullName').value         = s.full_name;
+    document.getElementById('fEmail').value            = s.email;
+    document.getElementById('fPassword').value         = '';
+    document.getElementById('fDept').value             = s.department_id;
+    document.getElementById('fBatch').value            = s.batch;
+    document.getElementById('fSemester').value         = s.semester;
+    document.getElementById('fPhone').value            = s.phone || '';
+    document.getElementById('fAddress').value          = s.address || '';
+    document.getElementById('fCgpa').value             = s.cgpa;
+    document.getElementById('fStatus').value           = s.status;
+    openModal('studentModal');
+}
+
+async function submitStudent() {
+    const full_name    = document.getElementById('fFullName').value.trim();
+    const email        = document.getElementById('fEmail').value.trim();
+    const password     = document.getElementById('fPassword').value;
+    const department_id= document.getElementById('fDept').value;
+    const batch        = document.getElementById('fBatch').value.trim();
+    const semester     = document.getElementById('fSemester').value;
+    const phone        = document.getElementById('fPhone').value.trim();
+    const address      = document.getElementById('fAddress').value.trim();
+
+    if (!full_name || !email || !department_id || !batch) {
+        showToast('Please fill in all required fields.', 'error'); return;
+    }
+
+    let data;
+    if (editMode) {
+        const id     = document.getElementById('editStudentDbId').value;
+        const cgpa   = document.getElementById('fCgpa').value;
+        const status = document.getElementById('fStatus').value;
+        const payload = { full_name, email, department_id, batch, semester, phone, address, cgpa, status };
+        if (password) payload.password = password;
+        data = await StudentAPI.update(id, payload);
+    } else {
+        const student_id = document.getElementById('fStudentId').value.trim();
+        if (!student_id || !password) {
+            showToast('Student ID and password required.', 'error'); return;
+        }
+        data = await StudentAPI.add({ student_id, full_name, email, password, department_id, batch, semester, phone, address });
+    }
+
+    if (data.success) {
+        showToast(data.message, 'success');
+        closeModal('studentModal');
+        document.getElementById('fStudentId').disabled = false;
+        loadStudents();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function deleteStudent(id) {
+    if (!confirmDelete('Delete this student? All their fees and results will also be deleted.')) return;
+    const data = await StudentAPI.delete(id);
+    if (data.success) { showToast(data.message, 'success'); loadStudents(); }
+    else showToast(data.message, 'error');
+}
+
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+    document.getElementById('fStudentId').disabled = false;
+}
+async function handleLogout() { await Auth.adminLogout(); window.location.href = '/admin/login.html'; }
+</script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results — SEU UMS Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .sidebar-link { transition: all .15s; }
+        .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,.1); color: #fff; }
+        .modal-backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-slate-100 flex min-h-screen">
+
+<aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen">
+    <div class="p-5 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <span class="font-display text-slate-900 font-bold text-sm">SEU</span>
+            </div>
+            <div><p class="text-white font-semibold text-sm">SEU Admin</p><p class="text-slate-500 text-xs">Management System</p></div>
+        </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 text-sm">
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-1">Main Menu</p>
+        <a href="/admin/dashboard.html" class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🏠</span> Dashboard</a>
+        <a href="/admin/students.html"  class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>👥</span> Students</a>
+        <a href="/admin/courses.html"   class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📚</span> Courses</a>
+        <a href="/admin/results.html"   class="sidebar-link active flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>📊</span> Results</a>
+        <p class="text-slate-500 text-xs uppercase font-semibold px-3 mb-2 mt-4">Finance</p>
+        <a href="/admin/fees.html"      class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>💰</span> Fee Management</a>
+        <a href="/admin/payments.html"  class="sidebar-link flex items-center gap-2.5 px-3 py-2.5 rounded-lg"><span>🧾</span> Payment History</a>
+    </nav>
+    <div class="p-4 border-t border-slate-700">
+        <button onclick="handleLogout()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-900/20 transition-colors flex items-center gap-2"><span>🚪</span> Logout</button>
+    </div>
+</aside>
+
+<main class="flex-1 overflow-auto">
+    <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div>
+            <h1 class="font-display text-xl font-bold text-slate-800">Results Management</h1>
+            <p class="text-slate-500 text-xs mt-0.5">Enter, edit and manage student results</p>
+        </div>
+        <button onclick="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors">
+            <span>+</span> Add Result
+        </button>
+    </header>
+
+    <div class="p-8">
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-5">
+            <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-44">
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Student ID</label>
+                    <input id="filterStudent" type="text" placeholder="Search by student ID..."
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Semester</label>
+                    <select id="filterSem" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">All</option>
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-medium block mb-1">Year</label>
+                    <input id="filterYear" type="number" placeholder="2024" min="2000"
+                           class="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button onclick="loadResults()" class="bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">🔍 Filter</button>
+                <button onclick="clearFilters()" class="bg-slate-100 text-slate-600 text-sm px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors">Clear</button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Student</th>
+                            <th class="text-left py-3 px-4 text-slate-500 font-medium">Course</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Sem/Year</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Marks</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Grade</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">GP</th>
+                            <th class="text-center py-3 px-4 text-slate-500 font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <tr><td colspan="7" class="text-center py-12 text-slate-400">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Result Modal -->
+<div id="resultModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-lg font-bold text-slate-800" id="modalTitle">Add Result</h3>
+            <button onclick="closeModal('resultModal')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+        </div>
+        <input type="hidden" id="editResultId">
+        <div class="space-y-4">
+            <div id="studentField">
+                <label class="text-xs font-medium text-slate-600 block mb-1">Student *</label>
+                <select id="fStudent" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">-- Select Student --</option>
+                </select>
+            </div>
+            <div id="courseField">
+                <label class="text-xs font-medium text-slate-600 block mb-1">Course *</label>
+                <select id="fCourse" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">-- Select Course --</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Semester *</label>
+                    <select id="fSem" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Marks *</label>
+                    <input id="fMarks" type="number" placeholder="0-100" min="0" max="100"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                           oninput="previewGrade(this.value)">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Out of</label>
+                    <input id="fTotal" type="number" value="100" min="1"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <!-- Grade preview -->
+            <div id="gradePreview" class="hidden bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center">
+                <p class="text-xs text-indigo-500 mb-1">Calculated Grade</p>
+                <p class="text-2xl font-bold text-indigo-700" id="gradeDisplay">—</p>
+                <p class="text-xs text-indigo-500" id="gpDisplay">GP: —</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Year *</label>
+                    <input id="fYear" type="number" value="2024" min="2000"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Remarks</label>
+                    <input id="fRemarks" type="text" placeholder="Optional"
+                           class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeModal('resultModal')" class="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">Cancel</button>
+            <button onclick="submitResult()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors" id="submitBtn">Add Result</button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script>
+let editMode = false;
+
+// Grade calculation (client-side preview)
+function calcGrade(marks) {
+    if (marks >= 80) return { grade: 'A+', gp: 4.00 };
+    if (marks >= 75) return { grade: 'A',  gp: 3.75 };
+    if (marks >= 70) return { grade: 'A-', gp: 3.50 };
+    if (marks >= 65) return { grade: 'B+', gp: 3.25 };
+    if (marks >= 60) return { grade: 'B',  gp: 3.00 };
+    if (marks >= 55) return { grade: 'B-', gp: 2.75 };
+    if (marks >= 50) return { grade: 'C+', gp: 2.50 };
+    if (marks >= 45) return { grade: 'C',  gp: 2.25 };
+    if (marks >= 40) return { grade: 'D',  gp: 2.00 };
+    return { grade: 'F', gp: 0.00 };
+}
+
+function previewGrade(marks) {
+    const preview = document.getElementById('gradePreview');
+    if (!marks) { preview.classList.add('hidden'); return; }
+    const { grade, gp } = calcGrade(parseFloat(marks));
+    document.getElementById('gradeDisplay').textContent = grade;
+    document.getElementById('gpDisplay').textContent    = `GP: ${gp.toFixed(2)}`;
+    preview.classList.remove('hidden');
+}
+
+function gradeColor(g) {
+    if (g === 'A+' || g === 'A') return 'text-emerald-600 font-bold';
+    if (g === 'A-' || g === 'B+') return 'text-blue-600 font-bold';
+    if (g === 'B' || g === 'B-') return 'text-indigo-600 font-semibold';
+    if (g === 'F') return 'text-red-600 font-bold';
+    return 'text-slate-600 font-semibold';
+}
+
+(async () => {
+    const session = await Auth.getSession();
+    if (!session.success || session.role !== 'admin') {
+        window.location.href = '/admin/login.html'; return;
+    }
+    // populate dropdowns
+    const [stdData, crsData] = await Promise.all([StudentAPI.getAll(), CourseAPI.getAll()]);
+    if (stdData.success) {
+        const sel = document.getElementById('fStudent');
+        stdData.data.forEach(s => sel.innerHTML += `<option value="${s.id}">${s.student_id} — ${s.full_name}</option>`);
+    }
+    if (crsData.success) {
+        const sel = document.getElementById('fCourse');
+        crsData.data.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.course_code} — ${c.course_name}</option>`);
+    }
+    loadResults();
+})();
+
+async function loadResults() {
+    const student_id = document.getElementById('filterStudent').value.trim();
+    const semester   = document.getElementById('filterSem').value;
+    const year       = document.getElementById('filterYear').value;
+    const params     = new URLSearchParams();
+    if (student_id) params.append('student_id', student_id);
+    if (semester)   params.append('semester', semester);
+    if (year)       params.append('year', year);
+
+    const data  = await ResultAPI.getAll(params.toString());
+    const tbody = document.getElementById('resultsBody');
+    if (!data.success || data.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-slate-400">No results found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.data.map(r => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50">
+            <td class="py-3 px-4">
+                <p class="font-semibold text-slate-700">${r.full_name}</p>
+                <p class="text-xs text-slate-400 font-mono">${r.student_no}</p>
+            </td>
+            <td class="py-3 px-4">
+                <p class="font-medium text-slate-700">${r.course_name}</p>
+                <p class="text-xs text-slate-400">${r.course_code} · ${r.credit_hours} cr</p>
+            </td>
+            <td class="py-3 px-4 text-center text-slate-600 text-sm">Sem ${r.semester} / ${r.year}</td>
+            <td class="py-3 px-4 text-center">${r.marks_obtained} / ${r.total_marks}</td>
+            <td class="py-3 px-4 text-center text-lg ${gradeColor(r.grade)}">${r.grade}</td>
+            <td class="py-3 px-4 text-center text-slate-600">${parseFloat(r.grade_point).toFixed(2)}</td>
+            <td class="py-3 px-4">
+                <div class="flex items-center justify-center gap-1">
+                    <button onclick='openEditModal(${JSON.stringify(r)})' class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium rounded-lg">✏️ Edit</button>
+                    <button onclick="deleteResult(${r.id})" class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 text-xs font-medium rounded-lg">🗑️</button>
+                </div>
+            </td>
+        </tr>`).join('');
+}
+
+function clearFilters() {
+    document.getElementById('filterStudent').value = '';
+    document.getElementById('filterSem').value     = '';
+    document.getElementById('filterYear').value    = '';
+    loadResults();
+}
+
+function openAddModal() {
+    editMode = false;
+    document.getElementById('modalTitle').textContent = 'Add Result';
+    document.getElementById('submitBtn').textContent  = 'Add Result';
+    document.getElementById('studentField').classList.remove('hidden');
+    document.getElementById('courseField').classList.remove('hidden');
+    document.getElementById('gradePreview').classList.add('hidden');
+    ['fMarks','fRemarks'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fTotal').value = '100';
+    document.getElementById('fYear').value  = new Date().getFullYear();
+    document.getElementById('fSem').value   = '1';
+    document.getElementById('editResultId').value = '';
+    openModal('resultModal');
+}
+
+function openEditModal(r) {
+    editMode = true;
+    document.getElementById('modalTitle').textContent = 'Edit Result';
+    document.getElementById('submitBtn').textContent  = 'Update Result';
+    document.getElementById('studentField').classList.add('hidden');
+    document.getElementById('courseField').classList.add('hidden');
+    document.getElementById('editResultId').value = r.id;
+    document.getElementById('fMarks').value       = r.marks_obtained;
+    document.getElementById('fTotal').value       = r.total_marks;
+    document.getElementById('fYear').value        = r.year;
+    document.getElementById('fSem').value         = r.semester;
+    document.getElementById('fRemarks').value     = r.remarks || '';
+    previewGrade(r.marks_obtained);
+    openModal('resultModal');
+}
+
+async function submitResult() {
+    const marks_obtained = document.getElementById('fMarks').value;
+    const total_marks    = document.getElementById('fTotal').value;
+    const semester       = document.getElementById('fSem').value;
+    const year           = document.getElementById('fYear').value;
+    const remarks        = document.getElementById('fRemarks').value;
+
+    if (!marks_obtained || !year) { showToast('Marks and year are required.', 'error'); return; }
+
+    let data;
+    if (editMode) {
+        const id = document.getElementById('editResultId').value;
+        data = await ResultAPI.update(id, { marks_obtained, total_marks, semester, remarks });
+    } else {
+        const student_id = document.getElementById('fStudent').value;
+        const course_id  = document.getElementById('fCourse').value;
+        if (!student_id || !course_id) { showToast('Select student and course.', 'error'); return; }
+        data = await ResultAPI.add({ student_id, course_id, semester, marks_obtained, total_marks, year, remarks });
+    }
+
+    if (data.success) {
+        showToast(data.message, 'success');
+        closeModal('resultModal');
+        loadResults();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function deleteResult(id) {
+    if (!confirmDelete('Delete this result record?')) return;
+    const data = await ResultAPI.delete(id);
+    if (data.success) { showToast(data.message, 'success'); loadResults(); }
+    else showToast(data.message, 'error');
+}
+
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+async function handleLogout() { await Auth.adminLogout(); window.location.href = '/admin/login.html'; }
+</script>
+</body>
+</html>

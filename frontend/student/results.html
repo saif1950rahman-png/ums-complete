@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Results — SEU UMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .nav-link { transition: all .15s; }
+        .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,.1); }
+        @media print {
+            nav, .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<nav class="bg-blue-800 text-white">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <span class="font-display text-slate-900 font-bold text-xs">SEU</span>
+            </div>
+            <span class="font-semibold text-sm">SEU Student Portal</span>
+        </div>
+        <div class="flex items-center gap-1 text-sm">
+            <a href="/student/dashboard.html" class="nav-link px-3 py-1.5 rounded-lg">🏠 Dashboard</a>
+            <a href="/student/results.html"   class="nav-link active px-3 py-1.5 rounded-lg">📊 Results</a>
+            <a href="/student/fees.html"       class="nav-link px-3 py-1.5 rounded-lg">💰 My Fees</a>
+            <button onclick="handleLogout()" class="ml-3 px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-xs font-medium transition-colors">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-5xl mx-auto px-6 py-8">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="font-display text-2xl font-bold text-slate-800">Academic Transcript</h1>
+            <p class="text-slate-500 text-sm mt-0.5" id="studentMeta">Loading...</p>
+        </div>
+        <button onclick="window.print()" class="no-print bg-slate-800 hover:bg-slate-700 text-white text-sm px-4 py-2 rounded-xl">🖨️ Print</button>
+    </div>
+
+    <!-- CGPA Card -->
+    <div class="bg-gradient-to-r from-blue-700 to-blue-900 rounded-2xl p-6 text-white mb-6 flex items-center justify-between">
+        <div>
+            <p class="text-blue-200 text-sm">Cumulative GPA</p>
+            <p class="font-display text-5xl font-bold mt-1" id="cgpaDisplay">—</p>
+            <p class="text-blue-300 text-xs mt-2">Out of 4.00 scale</p>
+        </div>
+        <div class="text-right">
+            <p class="text-blue-200 text-sm">Total Credits</p>
+            <p class="font-display text-3xl font-bold" id="totalCredits">—</p>
+            <p class="text-blue-200 text-sm mt-3">Results</p>
+            <p class="font-display text-3xl font-bold" id="totalResults">—</p>
+        </div>
+    </div>
+
+    <!-- Grading scale reference -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-6">
+        <p class="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Grading Scale</p>
+        <div class="flex flex-wrap gap-2 text-xs">
+            <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg font-semibold">A+ ≥80 (4.00)</span>
+            <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg font-semibold">A ≥75 (3.75)</span>
+            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg font-semibold">A- ≥70 (3.50)</span>
+            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg font-semibold">B+ ≥65 (3.25)</span>
+            <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg font-semibold">B ≥60 (3.00)</span>
+            <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg font-semibold">B- ≥55 (2.75)</span>
+            <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg font-semibold">C+ ≥50 (2.50)</span>
+            <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg font-semibold">C ≥45 (2.25)</span>
+            <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg font-semibold">D ≥40 (2.00)</span>
+            <span class="px-2 py-1 bg-red-100 text-red-700 rounded-lg font-semibold">F &lt;40 (0.00)</span>
+        </div>
+    </div>
+
+    <!-- Results grouped by semester -->
+    <div id="resultsContainer">
+        <p class="text-slate-400 text-center py-12">Loading results...</p>
+    </div>
+
+    <p class="text-center text-xs text-slate-400 mt-6">
+        Official Academic Transcript · Southeast University Bangladesh<br>
+        For verification, contact: registrar@seu.edu.bd
+    </p>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script>
+function gradeColorClass(g) {
+    if (g === 'A+' || g === 'A') return 'text-emerald-600';
+    if (g === 'A-' || g === 'B+') return 'text-blue-600';
+    if (g === 'B' || g === 'B-') return 'text-indigo-600';
+    if (g === 'C+' || g === 'C') return 'text-amber-600';
+    if (g === 'D') return 'text-orange-600';
+    if (g === 'F') return 'text-red-600';
+    return 'text-slate-600';
+}
+
+(async () => {
+    const session = await Auth.getSession();
+    if (!session.success || session.role !== 'student') {
+        window.location.href = '/student/login.html'; return;
+    }
+    const s = session.user;
+    document.getElementById('studentMeta').textContent =
+        `${s.full_name} · ${s.student_id} · ${s.department_name}`;
+    document.getElementById('cgpaDisplay').textContent = parseFloat(s.cgpa).toFixed(2);
+
+    const data = await ResultAPI.getMyResults();
+
+    if (!data.success) {
+        document.getElementById('resultsContainer').innerHTML =
+            '<p class="text-red-400 text-center py-12">Error loading results.</p>';
+        return;
+    }
+
+    if (data.data.length === 0) {
+        document.getElementById('totalResults').textContent = '0';
+        document.getElementById('totalCredits').textContent = '0';
+        document.getElementById('resultsContainer').innerHTML =
+            '<div class="bg-white rounded-2xl p-12 text-center text-slate-400 shadow-sm border border-slate-100">No result records found yet.</div>';
+        return;
+    }
+
+    document.getElementById('totalResults').textContent = data.data.length;
+    const totalCredits = data.data.reduce((sum, r) => sum + parseFloat(r.credit_hours || 0), 0);
+    document.getElementById('totalCredits').textContent = totalCredits.toFixed(1);
+
+    // Group by semester/year
+    const grouped = {};
+    data.data.forEach(r => {
+        const key = `Semester ${r.semester} — ${r.year}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(r);
+    });
+
+    let html = '';
+    for (const [semLabel, results] of Object.entries(grouped)) {
+        const semGpa = results.reduce((sum, r) => sum + parseFloat(r.grade_point), 0) / results.length;
+        const semCredits = results.reduce((sum, r) => sum + parseFloat(r.credit_hours || 0), 0);
+
+        html += `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-5">
+                <div class="bg-slate-50 px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-semibold text-slate-800">${semLabel}</h3>
+                    <div class="flex gap-4 text-xs text-slate-500">
+                        <span>Credits: <strong class="text-slate-700">${semCredits.toFixed(1)}</strong></span>
+                        <span>GPA: <strong class="text-blue-700">${semGpa.toFixed(2)}</strong></span>
+                    </div>
+                </div>
+                <table class="w-full text-sm">
+                    <thead class="border-b border-slate-50">
+                        <tr>
+                            <th class="text-left py-2.5 px-5 text-slate-400 font-medium text-xs">Course</th>
+                            <th class="text-center py-2.5 px-5 text-slate-400 font-medium text-xs">Credits</th>
+                            <th class="text-center py-2.5 px-5 text-slate-400 font-medium text-xs">Marks</th>
+                            <th class="text-center py-2.5 px-5 text-slate-400 font-medium text-xs">Grade</th>
+                            <th class="text-center py-2.5 px-5 text-slate-400 font-medium text-xs">Grade Point</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${results.map(r => `
+                            <tr class="border-b border-slate-50 hover:bg-slate-50">
+                                <td class="py-3 px-5">
+                                    <p class="font-medium text-slate-700">${r.course_name}</p>
+                                    <p class="text-xs text-slate-400">${r.course_code}</p>
+                                </td>
+                                <td class="py-3 px-5 text-center text-slate-600">${r.credit_hours}</td>
+                                <td class="py-3 px-5 text-center text-slate-600">${r.marks_obtained} / ${r.total_marks}</td>
+                                <td class="py-3 px-5 text-center font-bold text-xl ${gradeColorClass(r.grade)}">${r.grade}</td>
+                                <td class="py-3 px-5 text-center font-semibold text-slate-700">${parseFloat(r.grade_point).toFixed(2)}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    document.getElementById('resultsContainer').innerHTML = html;
+})();
+
+async function handleLogout() {
+    await Auth.studentLogout();
+    window.location.href = '/student/login.html';
+}
+</script>
+</body>
+</html>
